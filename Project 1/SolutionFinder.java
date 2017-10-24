@@ -12,16 +12,19 @@ public class SolutionFinder
 
         //The tree set should always be organized, with least cost being in beginning
         TreeSet<Node> frontierPool = new TreeSet<Node>( stateComparator );
-        HashSet<int[]> exploredMap = new HashSet<int[]>();
+        //A set of int[] for explored boards, too lazy to refactor to exploredSet
+        HashSet<EightBoard> exploredMap = new HashSet<EightBoard>();
         int numNodesGenerated = 0;
 
         if( heuristic.equals( "misplaced" ) )
         {
-            frontierPool.add( new Node( board, MisplacedHeuristic( board ), 0, 0 ) );
+            Node newNode = new Node( board, MisplacedHeuristic( board ), 0, 0, null );
+            frontierPool.add( newNode );
         }
         else if( heuristic.equals( "distance") )
         {
-            frontierPool.add( new Node( board, DistanceHeuristic( board ), 0, 0 ) );
+            Node newNode = new Node( board, DistanceHeuristic( board ), 0, 0, null );
+            frontierPool.add( newNode );
         }
 
         while( true )
@@ -38,35 +41,42 @@ public class SolutionFinder
             //Check if final state
             if( expandingNode.hn == 0 ) //If this doesn't work, use expandingNode.board.IsSolved()
             {
-                return new Solution( expandingNode.gn, numNodesGenerated );
+                ArrayList<int[]> traceback = new ArrayList<int[]>();
+                Node curNode = expandingNode;
+                while ( curNode != null )
+                {
+                    traceback.add( curNode.board.GetBoard() );
+                    curNode = curNode.parent;
+                }
+                return new Solution( expandingNode.gn, numNodesGenerated, traceback );
             }
             ArrayList<int[]> successors = expandingNode.board.GetSuccessors();
-            numNodesGenerated += successors.size();
             //Expand loop
             for( int[] successor : successors )
             {
+                EightBoard newBoard = new EightBoard( successor );
                 //Make sure we don't go back on ourselves
-                if( !Contains( exploredMap, successor ) )
+                if( !exploredMap.contains( newBoard ) )
                 {
-                    EightBoard newBoard = new EightBoard( successor );
                     if( heuristic.equals( "misplaced" ) )
                     {
-                        Node newNode = new Node( newBoard, MisplacedHeuristic( newBoard ), expandingNode.gn + 1, expandingNode.depth + 1 );
+                        Node newNode = new Node( newBoard, MisplacedHeuristic( newBoard ), expandingNode.gn + 1, expandingNode.depth + 1, expandingNode );
                         frontierPool.add( newNode );
                         //System.out.printf( "\nAdding board: %s", Arrays.toString( successor ) );
                     }
                     else if( heuristic.equals( "distance") )
                     {
-                        Node newNode = new Node( newBoard, DistanceHeuristic( newBoard ), expandingNode.gn + 1, expandingNode.depth + 1 );
+                        Node newNode = new Node( newBoard, DistanceHeuristic( newBoard ), expandingNode.gn + 1, expandingNode.depth + 1, expandingNode );
                         frontierPool.add( newNode );
                     }
+                    numNodesGenerated += 1;
                 }
             }
             //The expansion state should be initialized w/ the new board, h(n), and g(n) to calculate...
             //h(n) is calculated on the spot using one of the 2 heuristics
             //g(n) is the current expanding node's g(n) + 1
             //Add current node to explored set
-            exploredMap.add( expandingNode.board.GetBoard() );
+            exploredMap.add( expandingNode.board );
             // System.out.println( "Explored Set: ");
             // for( int[] temp : exploredMap )
             // {
@@ -121,13 +131,15 @@ public class SolutionFinder
         private int hn;
         private int gn;
         private int depth;
+        private Node parent;
 
-        public Node( EightBoard board, int hn, int gn, int depth )
+        public Node( EightBoard board, int hn, int gn, int depth, Node parent)
         {
             this.board = board;
             this.hn = hn;
             this.gn = gn;
             this.depth = depth;
+            this.parent = parent;
         }
     }
 

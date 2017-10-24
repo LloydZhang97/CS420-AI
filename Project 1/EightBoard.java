@@ -43,18 +43,6 @@ public class EightBoard
         this.board = Arrays.copyOf( board.board, board.board.length );
     }
 
-    public boolean IsSolved()
-    {
-        for( int index = 0, prev = board[index], cur = board[index + 1]; cur < board.length; ++index, prev = cur, cur = board[index] )
-        {
-            if( prev > cur )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
     public boolean IsValid()
     {
         int inversions = 0;
@@ -102,6 +90,18 @@ public class EightBoard
     public int[] GetBoard()
     {
         return board;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Arrays.hashCode(board);
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        return Arrays.equals(this.board, ( (EightBoard)obj ).board);
     }
 
 }

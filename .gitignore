@@ -1,1 +1,5 @@
 *.class
+*.pdf
+*.docx
+*.zip
+Test.java
