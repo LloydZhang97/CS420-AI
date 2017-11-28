@@ -3,6 +3,7 @@ import java.util.*;
 public class Driver{
 
     public static final Location STARTING_MOVE = new Location( 4, 4 );
+    public static final int SEARCH_DEPTH = 6;
 
     public static void main( String[] args ){
         Scanner in = new Scanner( System.in );
@@ -34,17 +35,22 @@ public class Driver{
             history += playerHistoryTrack + ". " + (char)(97 + STARTING_MOVE.row) + (STARTING_MOVE.col + 1) + " ";
             System.out.println( strBoard );
             System.out.println( history );
-            sf = new SolutionFinder( 'X', 'O', time );
+            sf = new SolutionFinder( 'X', 'O', time, SEARCH_DEPTH );
         }
         else if( input.equals( "n" ) ){
             mySymbol = 'O'; theirSymbol = 'X';
-            sf = new SolutionFinder( 'O', 'X', time );
+            sf = new SolutionFinder( 'O', 'X', time, SEARCH_DEPTH + 1 );
             history += playerHistoryTrack + ". - ";
         }
         while( true ){
             System.out.println( "Whats the move?" );
             input = in.nextLine();
             inputMove = ParseMove( input );
+            //System.out.println( board[inputMove.row][inputMove.col] );
+            if( board[inputMove.row][inputMove.col] != '-' ){
+                System.out.println( "Please enter a valid move idiot" );
+                continue;
+            }
             board[inputMove.row][inputMove.col] = theirSymbol;
             strBoard = UpdateBoard( strBoard, inputMove.row, inputMove.col, theirSymbol );
             history += input + "\n";
@@ -53,7 +59,7 @@ public class Driver{
                 System.arraycopy( board[i], 0, inputBoard[i], 0, board[i].length );
             }
             outputMove = sf.AlphaBetaSearch( inputBoard, inputMove );
-            Location newLoc = sf.FinishIt( board );
+            Location newLoc = sf.FinishIt( board, mySymbol );
             boolean win = false;
             if( newLoc != null ){
                 win = true;

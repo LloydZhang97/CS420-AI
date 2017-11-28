@@ -1,12 +1,12 @@
 public class Utility {
 
   public static void main(String[] args) {
-    char[][] board = {{'-', '-', '-', '-', 'X', '-', '-', '-'},
-                      {'-', '-', '-', '-', 'O', '-', '-', '-'},
-                      {'-', '-', '-', 'O', 'O', '-', '-', '-'},
-                      {'-', '-', '-', '-', 'O', 'X', '-', '-'},
-                      {'-', '-', '-', '-', 'X', 'X', 'X', '-'},
+    char[][] board = {{'-', '-', '-', '-', '-', '-', '-', '-'},
                       {'-', '-', '-', '-', '-', '-', '-', '-'},
+                      {'-', '-', '-', '-', 'X', '-', '-', '-'},
+                      {'-', '-', 'O', 'X', 'X', '-', '-', '-'},
+                      {'-', '-', '-', 'O', 'X', '-', '-', '-'},
+                      {'-', '-', '-', '-', 'O', '-', '-', '-'},
                       {'-', '-', '-', '-', '-', '-', '-', '-'},
                       {'-', '-', '-', '-', '-', '-', '-', '-'}};
     char[][] newboard = {{'-','O','O','-','O'}};
@@ -23,8 +23,8 @@ public class Utility {
     boolean rightBlocked = false;
     boolean topBlocked = false;
     boolean bottomBlocked = false;
-    // boolean pairGap = false;
-    // boolean singleGap = false;
+    boolean pairGap = false;
+    boolean singleGap = false;
     //triple count for killmove; if >=2, opponent cannot stop win
     int tripleCount = 0;
 
@@ -33,15 +33,22 @@ public class Utility {
       for (int column = 0; column < state[0].length; column++) {
         //if not player piece (is - or opponent)
         if(!(state[row][column] == playerPiece)) {
-          score += evaluate(foundSingle, foundDouble, foundTriple, leftBlocked, rightBlocked);
-          // if( state[row][column] == '-' ){
-          //   if( foundDouble ){
-          //     pairGap = true;
-          //   }
-          //   if( foundSingle ){
-          //     singleGap = true;
-          //   }
-          // }
+          score += evaluate(foundSingle, foundDouble, foundTriple, leftBlocked, rightBlocked, singleGap, pairGap );
+          if( state[row][column] == '-' ){
+            pairGap = false;
+            singleGap = false;
+            if( foundDouble ){
+              pairGap = true;
+            }
+            if( foundSingle ){
+              singleGap = true;
+            }
+          }
+          else{
+            //opponentpiece
+            pairGap = false;
+            singleGap = false;
+          }
           foundSingle = false;
           foundDouble = false;
           foundTriple = false;
@@ -102,17 +109,19 @@ public class Utility {
         }
 
         //if here, four in a row, win found
-        return 10;
+        return 20;
       }
       //end of row
       rightBlocked = true;
-      score += evaluate(foundSingle, foundDouble, foundTriple, leftBlocked, rightBlocked);
+      score += evaluate(foundSingle, foundDouble, foundTriple, leftBlocked, rightBlocked, singleGap, pairGap);
 
       foundSingle = false;
       foundDouble = false;
       foundTriple = false;
       leftBlocked = false;
       rightBlocked = false;
+      singleGap = false;
+      pairGap = false;
     }
 
     //eval columns
@@ -120,7 +129,22 @@ public class Utility {
       for(int row = 0; row < state.length; row++) {
         //if not player piece (is - or opponent)
         if(!(state[row][column] == playerPiece)) {
-          score += evaluate(foundSingle, foundDouble, foundTriple, topBlocked, bottomBlocked);
+          score += evaluate(foundSingle, foundDouble, foundTriple, topBlocked, bottomBlocked, singleGap, pairGap );
+          if( state[row][column] == '-' ){
+            pairGap = false;
+            singleGap = false;
+            if( foundDouble ){
+              pairGap = true;
+            }
+            if( foundSingle ){
+              singleGap = true;
+            }
+          }
+          else{
+            //opponentpiece
+            pairGap = false;
+            singleGap = false;
+          }
           foundSingle = false;
           foundDouble = false;
           foundTriple = false;
@@ -188,31 +212,33 @@ public class Utility {
         }
 
         //if here, four in a row, win found
-        return 10;
+        return 20;
       }
       //end of column
       bottomBlocked = true;
-      score += evaluate(foundSingle, foundDouble, foundTriple, topBlocked, bottomBlocked);
+      score += evaluate(foundSingle, foundDouble, foundTriple, topBlocked, bottomBlocked, singleGap, pairGap);
       foundSingle = false;
       foundDouble = false;
       foundTriple = false;
       topBlocked = false;
       bottomBlocked = false;
+      singleGap = false;
+      pairGap = false;
     }
 
     if(tripleCount >= 2) {
-      return 10;
+      return 20;
     }
     return score;
   }
 
-  private static int evaluate(boolean foundSingle, boolean foundDouble, boolean foundTriple, boolean leftOrTopBlocked, boolean rightOrBottomBlocked) {
+  private static int evaluate(boolean foundSingle, boolean foundDouble, boolean foundTriple, boolean leftOrTopBlocked, boolean rightOrBottomBlocked, boolean singleGap, boolean pairGap ) {
     int score = 0;
     //return highest because if triple = true, double & single = true
 
     //triple w/ 2 unblocked
     if (foundTriple && !leftOrTopBlocked && !rightOrBottomBlocked) {
-      score += 10;
+      score += 20;
       return score;
     }
 
@@ -224,7 +250,10 @@ public class Utility {
     }
 
     //pair w/ 2 option
-    if (foundDouble && !leftOrTopBlocked && !rightOrBottomBlocked) {
+    if ((foundDouble && !leftOrTopBlocked && !rightOrBottomBlocked))  {
+      if(singleGap || pairGap){
+        score += 3;
+      }
       score += 2;
       return score;
     }
@@ -233,6 +262,11 @@ public class Utility {
     if ((foundDouble && leftOrTopBlocked && !rightOrBottomBlocked) ||
         (foundDouble && rightOrBottomBlocked && !leftOrTopBlocked)) {
       score += 1;
+      return score;
+    }
+
+    if(foundSingle && pairGap){
+      score += 3;
       return score;
     }
 
