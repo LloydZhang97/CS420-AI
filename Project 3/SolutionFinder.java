@@ -2,15 +2,18 @@ import java.util.*;
 
 public class SolutionFinder{
     //Consider using a table of Location
+    private long time;
+    private long ttl;
     private Location[][] locationTable;
     private char mySymbol;
     private char theirSymbol;
     private static final int BOARD_SIZE = 8;
-    private static final int SEARCH_DEPTH = 5;
+    private static final int SEARCH_DEPTH = 6;
 
-    public SolutionFinder( char mySymbol, char theirSymbol ){
+    public SolutionFinder( char mySymbol, char theirSymbol, long ttl ){
         this.mySymbol = mySymbol;
         this.theirSymbol = theirSymbol;
+        this.ttl = ttl * 1000;
         locationTable = new Location[BOARD_SIZE][BOARD_SIZE];
         for( int i = 0; i < BOARD_SIZE; i++ ){
             for( int j = 0; j < BOARD_SIZE; j++ ){
@@ -20,16 +23,33 @@ public class SolutionFinder{
     }
 
     public Location AlphaBetaSearch( char[][] state, Location lastMove ){
+        time = System.currentTimeMillis();
+        Location newLoc = FinishIt( state );
+        if( newLoc != null ){
+            return newLoc;
+        }
         return InitialMaxxy( state, Integer.MIN_VALUE, Integer.MAX_VALUE, SEARCH_DEPTH, lastMove );
     }
 
     public Location InitialMaxxy( char[][] state, int alpha, int beta, int remainingDepth, Location lastMove ){
         //Do a terminal check (whether kill move or won state)
+        // for( int i = 0; i < state.length; i++ ){
+        //    System.out.println( Arrays.toString( state[i] ) );
+        // }
         int v = Integer.MIN_VALUE;
         ArrayList<Location> successors = GetSuccessors( state, lastMove );
-        Location prevLoc = successors.get( 0 );
-        Location returnLoc = successors.get( 0 );
+        // System.out.println( Arrays.toString( successors.toArray() ) + " " + lastMove );
+        Location prevLoc = new Location( successors.get( 0 ) );
+        Location returnLoc = new Location( successors.get( 0 ) );
+        // System.out.println( "Successor List" );
         for( Location successor: successors ){
+            if( System.currentTimeMillis() - time > ttl ){
+                if( v == Integer.MIN_VALUE ){
+                    v = Integer.MAX_VALUE;
+                }
+                System.out.println( "Timeout" );
+                break;
+            }
             //Apply symbol to location change
             state[prevLoc.row][prevLoc.col] = '-';
             state[successor.row][successor.col] = mySymbol;
@@ -37,24 +57,54 @@ public class SolutionFinder{
             prevLoc.col = successor.col;
             int minReturn =  Minny( state, alpha, beta, remainingDepth - 1, successor );
             if( minReturn > v ){
-                returnLoc = successor;
+                returnLoc.row = successor.row;
+                returnLoc.col = successor.col;
                 v = minReturn;
             }
             alpha = Math.max( alpha, v );
+        }
+        state[prevLoc.row][prevLoc.col] = '-';
+        System.out.println( "Utility: " + v );
+        if( v >= 10 ){
+            System.out.println( "I have probably won, or there is buggy code" );
+        }
+        else if( v <= -10 ){
+            System.out.println( "I have probably lost. I bring dishonor to my family. I shall now commit seppuku" );
+            //System.exit(0);
         }
         return returnLoc;
     }
 
     public int Maxxy( char[][] state, int alpha, int beta, int remainingDepth, Location lastMove ){
+
         //Do a terminal check (whether kill move or won state)
-        int terminalState = Utility.UtilityFunction( state, mySymbol );
-        if( terminalState == 10 || remainingDepth == 0 ){
-            return terminalState;
+        int myUtility = Utility.UtilityFunction( state, mySymbol );
+        int theirUtility = -Utility.UtilityFunction( state, theirSymbol );
+        // for( int i = 0; i < state.length; i++ ){
+        //     System.out.println( Arrays.toString( state[i] ) );
+        // }
+        // try{
+        //     Thread.sleep( 100 );
+        // }
+        //catch( Exception e ){}
+        if( theirUtility <= -10 ){
+            //System.out.println( "Leaf: " + theirUtility );
+            return theirUtility;
+        }
+        if( remainingDepth == 0 ){
+            //System.out.println( "Leaf: " + ( myUtility + theirUtility ) );
+            return myUtility + theirUtility;
         }
         int v = Integer.MIN_VALUE;
         ArrayList<Location> successors = GetSuccessors( state, lastMove );
-        Location prevLoc = successors.get( 0 );
+        Location prevLoc = new Location( successors.get( 0 ) );
         for( Location successor: successors ){
+            if( System.currentTimeMillis() - time > ttl ){
+                if( v == Integer.MIN_VALUE ){
+                    v = Integer.MAX_VALUE;
+                }
+                break;
+            }
             //Apply symbol to location change
             state[prevLoc.row][prevLoc.col] = '-';
             state[successor.row][successor.col] = mySymbol;
@@ -62,38 +112,73 @@ public class SolutionFinder{
             prevLoc.col = successor.col;
             v = Math.max( v, Minny( state, alpha, beta, remainingDepth - 1, successor ) );
             if( v >= beta ){
+                state[prevLoc.row][prevLoc.col] = '-';
+                //System.out.println( "[Prune] Remaining Depth Max: " + remainingDepth + " v: " + v );
                 return v;
             }
             alpha = Math.max( alpha, v );
         }
+        //System.out.println( "Remaining Depth Max: " + remainingDepth + " v: " + v );
+        state[prevLoc.row][prevLoc.col] = '-';
         return v;
     }
 
     public int Minny( char[][] state, int alpha, int beta, int remainingDepth, Location lastMove ){
-        int terminalState = Utility.UtilityFunction( state, theirSymbol );
-        if( terminalState == 10 || remainingDepth == 0 ){
-            return -terminalState;
+        int myUtility = Utility.UtilityFunction( state, mySymbol );
+        int theirUtility = -Utility.UtilityFunction( state, theirSymbol );
+        // for( int i = 0; i < state.length; i++ ){
+        //     System.out.println( Arrays.toString( state[i] ) );
+        // }
+        // try{
+        //     Thread.sleep( 100 );
+        // }
+        //catch( Exception e ){}
+        if( myUtility >= 10 ){
+            // for( int i = 0; i < state.length; i++ ){
+            //     System.out.println( Arrays.toString( state[i] ) );
+            // }
+            // System.out.println( "Leaf: " + myUtility );
+            return myUtility;
+        }
+        if( remainingDepth == 0 ){
+            //System.out.println( "Leaf: " + ( myUtility + theirUtility ) );
+            return myUtility + theirUtility;
         }
         int v = Integer.MAX_VALUE;
         ArrayList<Location> successors = GetSuccessors( state, lastMove );
-        Location prevLoc = successors.get( 0 );
+        Location prevLoc = new Location( successors.get( 0 ) );
         for( Location successor: successors ){
+            if( System.currentTimeMillis() - time > ttl ){
+                if( v == Integer.MIN_VALUE ){
+                    v = Integer.MAX_VALUE;
+                }
+                break;
+            }
             //Apply symbol to location change
             state[prevLoc.row][prevLoc.col] = '-';
             state[successor.row][successor.col] = theirSymbol;
             prevLoc.row = successor.row;
             prevLoc.col = successor.col;
             v = Math.min( v, Maxxy( state, alpha, beta, remainingDepth - 1, successor ) );
+            //System.out.println( v );
             if( v <= alpha ){
+                //System.out.println( "[Prune] Remaining Depth Min: " + remainingDepth + " v: " + v );
+                state[prevLoc.row][prevLoc.col] = '-';
                 return v;
             }
             beta = Math.min( beta, v );
         }
+        //System.out.println( "Remaining Depth Min: " + remainingDepth + " v: " + v );
+        state[prevLoc.row][prevLoc.col] = '-';
         return v;
     }
 
     public ArrayList<Location> GetSuccessors( char[][] state, Location lastMove ){
         //Start from last move, spiral out
+        // for( int i = 0; i < state.length; i++ ){
+        //     System.out.println( Arrays.toString( state[i] ) );
+        // }
+
         ArrayList<Location> successors = new ArrayList<Location>();
         int rightCol, leftCol, topRow, botRow;
         int rowPos, colPos;
@@ -129,7 +214,7 @@ public class SolutionFinder{
         while( true ){
             for( ; colPos < rightCol; ++colPos ){
                 //System.out.println( "right" );
-                if( AdjacentChecker( state, rowPos, colPos ) ){
+                if( state[rowPos][colPos] == '-' && AdjacentChecker( state, rowPos, colPos ) ){
                     successors.add( locationTable[rowPos][colPos] );
                 }
             }
@@ -141,7 +226,7 @@ public class SolutionFinder{
             }
             for( ; rowPos > topRow; rowPos-- ){
                 //System.out.println( "up" );
-                if( AdjacentChecker( state, rowPos, colPos ) ){
+                if( state[rowPos][colPos] == '-' && AdjacentChecker( state, rowPos, colPos ) ){
                     successors.add( locationTable[rowPos][colPos] );
                 }
             }
@@ -153,7 +238,7 @@ public class SolutionFinder{
             }
             for( ; colPos > leftCol; colPos-- ){
                 //System.out.println( "left" );
-                if( AdjacentChecker( state, rowPos, colPos ) ){
+                if( state[rowPos][colPos] == '-' && AdjacentChecker( state, rowPos, colPos ) ){
                     successors.add( locationTable[rowPos][colPos] );
                 }
             }
@@ -165,7 +250,7 @@ public class SolutionFinder{
             }
             for( ; rowPos < botRow; rowPos++ ){
                 //System.out.println( "down" );
-                if( AdjacentChecker( state, rowPos, colPos ) ){
+                if( state[rowPos][colPos] == '-' && AdjacentChecker( state, rowPos, colPos ) ){
                     successors.add( locationTable[rowPos][colPos] );
                 }
             }
@@ -179,6 +264,7 @@ public class SolutionFinder{
                 break;
             }
         }
+        //System.out.println( Arrays.toString( successors.toArray() ) );
         return successors;
     }
 
@@ -214,5 +300,43 @@ public class SolutionFinder{
         */
         //This function also acts as our terminal state checker, if -10 or 10, its a terminal state
         return -100;
+    }
+
+    public Location FinishIt( char[][] state ){
+        for( int i = 0; i < BOARD_SIZE; i++ ){
+            for( int j = 0; j < BOARD_SIZE; j++ ){
+                int count = 3;
+                while( j < BOARD_SIZE && count > 0 && state[i][j] == mySymbol ){
+                    j++;
+                    count--;
+                }
+                if( count == 0 ){
+                    if( j < BOARD_SIZE && state[i][j] == '-' ){
+                        return locationTable[i][j];
+                    }
+                    if( j - 4 >= 0 && state[i][j - 4] == '-' ){
+                        return locationTable[i][j - 4];
+                    }
+                }
+            }
+        }
+        for( int i = 0; i < BOARD_SIZE; i++ ){
+            for( int j = 0; j < BOARD_SIZE; j++ ){
+                int count = 3;
+                while( j < BOARD_SIZE && count > 0 && state[j][i] == mySymbol ){
+                    j++;
+                    count--;
+                }
+                if( count == 0 ){
+                    if( j < BOARD_SIZE && state[j][i] == '-' ){
+                        return locationTable[j][i];
+                    }
+                    if( j - 4 >= 0 && state[j - 4][i] == '-' ){
+                        return locationTable[j - 4][i];
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

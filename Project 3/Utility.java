@@ -1,13 +1,16 @@
 public class Utility {
 
   public static void main(String[] args) {
-    char[][] board = {{'O','-','X','X','X'},
-                      {'O','O','X','-','O'},
-                      {'-','O','O','-','O'},
-                      {'-','O','-','-','X'},
-                      {'-','X','-','-','-'}};
+    char[][] board = {{'-', '-', '-', '-', 'X', '-', '-', '-'},
+                      {'-', '-', '-', '-', 'O', '-', '-', '-'},
+                      {'-', '-', '-', 'O', 'O', '-', '-', '-'},
+                      {'-', '-', '-', '-', 'O', 'X', '-', '-'},
+                      {'-', '-', '-', '-', 'X', 'X', 'X', '-'},
+                      {'-', '-', '-', '-', '-', '-', '-', '-'},
+                      {'-', '-', '-', '-', '-', '-', '-', '-'},
+                      {'-', '-', '-', '-', '-', '-', '-', '-'}};
     char[][] newboard = {{'-','O','O','-','O'}};
-    System.out.println(UtilityFunction(newboard,'O'));
+    System.out.println(UtilityFunction(board,'X'));
   }
 
   //TODO: evaluate something like {'-','O','O','-','O'} ?
@@ -20,6 +23,8 @@ public class Utility {
     boolean rightBlocked = false;
     boolean topBlocked = false;
     boolean bottomBlocked = false;
+    // boolean pairGap = false;
+    // boolean singleGap = false;
     //triple count for killmove; if >=2, opponent cannot stop win
     int tripleCount = 0;
 
@@ -29,6 +34,14 @@ public class Utility {
         //if not player piece (is - or opponent)
         if(!(state[row][column] == playerPiece)) {
           score += evaluate(foundSingle, foundDouble, foundTriple, leftBlocked, rightBlocked);
+          // if( state[row][column] == '-' ){
+          //   if( foundDouble ){
+          //     pairGap = true;
+          //   }
+          //   if( foundSingle ){
+          //     singleGap = true;
+          //   }
+          // }
           foundSingle = false;
           foundDouble = false;
           foundTriple = false;

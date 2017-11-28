@@ -22,6 +22,8 @@ public class Driver{
         int playerHistoryTrack = 1;
         String strBoard = "  1 2 3 4 5 6 7 8\nA - - - - - - - -\nB - - - - - - - -\nC - - - - - - - -\nD - - - - - - - -\nE - - - - - - - -\nF - - - - - - - -\nG - - - - - - - -\nH - - - - - - - -";
         System.out.println( "Welcome to the connect 4 not connect 4 game winner" );
+        System.out.print( "How much time are you giving me? (sec): " );
+        long time = (long)Integer.parseInt( in.nextLine() );
         System.out.print( "Am I going first?(y/n): " );
         String input = in.nextLine();
         SolutionFinder sf = null;
@@ -32,11 +34,11 @@ public class Driver{
             history += playerHistoryTrack + ". " + (char)(97 + STARTING_MOVE.row) + (STARTING_MOVE.col + 1) + " ";
             System.out.println( strBoard );
             System.out.println( history );
-            sf = new SolutionFinder( 'X', 'O' );
+            sf = new SolutionFinder( 'X', 'O', time );
         }
         else if( input.equals( "n" ) ){
             mySymbol = 'O'; theirSymbol = 'X';
-            sf = new SolutionFinder( 'O', 'X' );
+            sf = new SolutionFinder( 'O', 'X', time );
             history += playerHistoryTrack + ". - ";
         }
         while( true ){
@@ -46,11 +48,23 @@ public class Driver{
             board[inputMove.row][inputMove.col] = theirSymbol;
             strBoard = UpdateBoard( strBoard, inputMove.row, inputMove.col, theirSymbol );
             history += input + "\n";
-            outputMove = sf.AlphaBetaSearch( board, inputMove );
+            char[][] inputBoard =  new char[8][8];
+            for( int i = 0; i < inputBoard.length; i++ ){
+                System.arraycopy( board[i], 0, inputBoard[i], 0, board[i].length );
+            }
+            outputMove = sf.AlphaBetaSearch( inputBoard, inputMove );
+            Location newLoc = sf.FinishIt( board );
+            boolean win = false;
+            if( newLoc != null ){
+                win = true;
+            }
             board[outputMove.row][outputMove.col] = mySymbol;
             strBoard = UpdateBoard( strBoard, outputMove.row, outputMove.col, mySymbol );
             playerHistoryTrack++;
             history += playerHistoryTrack + ". " + (char)(97 + outputMove.row) + (outputMove.col + 1) + " ";
+            if( win ){
+                history += " won";
+            }
             System.out.println( strBoard );
             System.out.println( history );
         }
